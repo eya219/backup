@@ -32,7 +32,8 @@ Write-Host "Removing snapshot from original VM..."
 # Uncomment the next line to remove snapshot immediately if needed
 # Get-Snapshot -VM $vm -Name "BackupSnapshot" | Remove-Snapshot -Confirm:$false
 
-$ovfCommand = "/usr/local/bin/ovftool/ovftool --noSSLVerify vi://$VCENTER_USER:$VCENTER_PASS@$VCENTER_HOST/$VM_PATH $REMOTE_EXPORT_PATH"
+$ovfCommand = "/usr/local/bin/ovftool/ovftool --noSSLVerify vi://${VCENTER_USER}:${VCENTER_PASS}@${VCENTER_HOST}/${VM_PATH} ${REMOTE_EXPORT_PATH}"
+
 Write-Host "Remote ovftool command: $ovfCommand"
 
 $plinkArgs = @(
