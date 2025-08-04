@@ -24,7 +24,7 @@ Write-Host "Creating snapshot..."
 $snapshot = New-Snapshot -VM $vm -Name "BackupSnapshot" -Description "Snapshot for manual backup" -Quiesce -Memory:$false
 
 Write-Host "Cloning VM to $CLONE_VM_NAME..."
-$datastore = Get-Datastore | Select-Object -First 1
+$datastore = Get-Datastore -Name Ds3
 $vmHost = (Get-VM -Name $SOURCE_VM_NAME).VMHost
 New-VM -Name $CLONE_VM_NAME -VM $vm -Datastore $datastore -VMHost $vmHost -LinkedClone -ReferenceSnapshot $snapshot
 
