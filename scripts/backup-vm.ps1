@@ -16,8 +16,10 @@ Import-Module VMware.PowerCLI
 Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false
 Set-PowerCLIConfiguration -Scope User -ParticipateInCEIP $false -Confirm:$false
 
+Disconnect-VIServer * -Confirm:$false -Force
+
 $vcenter = Connect-VIServer -Server $VCENTER_HOST -User $VCENTER_USER -Password $VCENTER_PASS
-# $global:DefaultVIServers[0].ExtensionData.Client.Timeout = 1200000
+$global:DefaultVIServers[0].ExtensionData.Client.Timeout = 1200000
 
 $vm = Get-VM -Name $SOURCE_VM_NAME
 
