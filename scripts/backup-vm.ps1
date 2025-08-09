@@ -21,7 +21,7 @@ Set-PowerCLIConfiguration -Scope User -ParticipateInCEIP $false -Confirm:$false
 
 
 
-$vcenter = Connect-VIServer -Server vcsa01.lab.local -User $VCENTER_USER -Password $VCENTER_PASS
+$vcenter = Connect-VIServer -Server vcsa-01.tnlabs.local -User $VCENTER_USER -Password $VCENTER_PASS
 $global:DefaultVIServers[0].ExtensionData.Client.Timeout = 1200000
 
 $vm = Get-VM -Name $SOURCE_VM_NAME
