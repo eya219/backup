@@ -11,8 +11,10 @@ param (
     [string]$LINUX_SSH_PASSWORD,
     [string]$LINUX_SSH_HOST
 )
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+[System.Net.ServicePointManager]::Expect100Continue = $true
 
-Import-Module VMware.PowerCLI
+Import-Module VMware.PowerCLI -Force
 Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false | Out-Null
 Set-PowerCLIConfiguration -Scope User -ParticipateInCEIP $false -Confirm:$false
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
