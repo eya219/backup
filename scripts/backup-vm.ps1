@@ -13,8 +13,12 @@ param (
 )
 
 Import-Module VMware.PowerCLI
-Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false
+Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false | Out-Null
 Set-PowerCLIConfiguration -Scope User -ParticipateInCEIP $false -Confirm:$false
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+$vcenter = Connect-VIServer -Server $env:VCENTER_HOST -User $env:VCENTER_USER -Password $env:VCENTER_PASS -Force
+
 
 $vcenter = Connect-VIServer -Server $VCENTER_HOST -User $VCENTER_USER -Password $VCENTER_PASS
 $global:DefaultVIServers[0].ExtensionData.Client.Timeout = 1200000
