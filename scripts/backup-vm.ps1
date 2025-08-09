@@ -11,34 +11,41 @@ param (
     [string]$LINUX_SSH_PASSWORD,
     [string]$LINUX_SSH_HOST
 )
+
+# Enforce TLS 1.2
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 [System.Net.ServicePointManager]::Expect100Continue = $true
 
 Import-Module VMware.PowerCLI -Force
+
+# PowerCLI Configurations
 Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false | Out-Null
 Set-PowerCLIConfiguration -Scope User -ParticipateInCEIP $false -Confirm:$false
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
+# Increase the WebOperationTimeoutSeconds for longer operations (20 minutes here)
+Set-PowerCLIConfiguration -WebOperationTimeoutSeconds 1200 -Scope Session -Confirm:$false
 
+# Connect to vCenter using the parameter for hostname
+$vcenter = Connect-VIServer -Server $VCENTER_HOST -User $VCENTER_USER -Password $VCENTER_PASS
 
-$vcenter = Connect-VIServer -Server vcsa-01.tnlabs.local -User $VCENTER_USER -Password $VCENTER_PASS
-$global:DefaultVIServers[0].ExtensionData.Client.Timeout = 1200000
-
-$vm = Get-VM -Name $SOURCE_VM_NAME
+# Get the VM object
+$vm = Get-VM -Name $SOURCE_VM_NAME -ErrorAction Stop
 
 Write-Host "Creating snapshot..."
 $snapshot = New-Snapshot -VM $vm -Name "BackupSnapshot" -Description "Snapshot for manual backup" -Quiesce -Memory:$false
 
 Write-Host "Cloning VM to $CLONE_VM_NAME..."
-$datastore = Get-Datastore -Name Ds3
-$vmHost = (Get-VM -Name $SOURCE_VM_NAME).VMHost
+$datastore = Get-Datastore -Name Ds3 -ErrorAction Stop
+$vmHost = $vm.VMHost
 New-VM -Name $CLONE_VM_NAME -VM $vm -Datastore $datastore -VMHost $vmHost -LinkedClone -ReferenceSnapshot $snapshot
 
 Write-Host "Removing snapshot from original VM..."
 # Uncomment the next line to remove snapshot immediately if needed
 # Get-Snapshot -VM $vm -Name "BackupSnapshot" | Remove-Snapshot -Confirm:$false
 
-$ovfCommand = "/usr/local/bin/ovftool/ovftool --noSSLVerify vi://${VCENTER_USER}:${VCENTER_PASS}@${VCENTER_HOST}/${VM_PATH} ${REMOTE_EXPORT_PATH}"
+# Construct the ovftool command to run remotely on Linux
+$escapedVMPath = [uri]::EscapeDataString($VM_PATH)
+$ovfCommand = "/usr/local/bin/ovftool/ovftool --noSSLVerify vi://${VCENTER_USER}:${VCENTER_PASS}@${VCENTER_HOST}/${escapedVMPath} ${REMOTE_EXPORT_PATH}"
 
 Write-Host "Remote ovftool command: $ovfCommand"
 
@@ -48,11 +55,16 @@ $plinkArgs = @(
     "$LINUX_SSH_USER@$LINUX_SSH_HOST",
     $ovfCommand
 )
+
+Write-Host "Starting remote export with plink..."
 & "$PLINK_PATH" @plinkArgs
 
 Write-Host "Deleting cloned VM..."
 Get-VM -Name $CLONE_VM_NAME | Remove-VM -DeletePermanently -Confirm:$false
+
+Write-Host "Removing snapshot from original VM..."
 Get-Snapshot -VM $vm -Name "BackupSnapshot" | Remove-Snapshot -Confirm:$false
+
 Disconnect-VIServer -Server $vcenter -Confirm:$false
 
 Write-Host "Backup and export completed."
