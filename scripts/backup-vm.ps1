@@ -44,6 +44,9 @@ Write-Host "Removing snapshot from original VM..."
 # Get-Snapshot -VM $vm -Name "BackupSnapshot" | Remove-Snapshot -Confirm:$false
 
 # Construct the ovftool command to run remotely on Linux
+if (-not $VM_PATH.StartsWith("/")) {
+    $VM_PATH = "/" + $VM_PATH
+}
 $ovfCommand = "/usr/local/bin/ovftool/ovftool --noSSLVerify vi://${VCENTER_USER}:${VCENTER_PASS}@${VCENTER_HOST}${VM_PATH} ${REMOTE_EXPORT_PATH}"
 
 Write-Host "Remote ovftool command: $ovfCommand"
