@@ -73,6 +73,23 @@ $VMNameWithDate = "$env:TARGET_VM_NAME-$DateSuffix"
 Write-Host "VM will be restored as: $VMNameWithDate"
 
 $ovfImportCommand = "/usr/local/bin/ovftool/ovftool --acceptAllEulas --noSSLVerify --overwrite --datastore=`"$selectedDatastore`" --name=$VMNameWithDate $env:REMOTE_OVA_PATH vi://$env:VCENTER_USER`:$env:VCENTER_PASS@$env:VCENTER_HOST/$env:TARGET_VM_FOLDER"
+# Wrap the entire ovftool command in single quotes for remote shell
+# Escape any single quotes in the command (if any)
+$escapedCommand = $ovfImportCommand -replace "'", "'\\''"
+
+# Wrap in single quotes for sh -c
+$remoteCommandQuoted = "'$escapedCommand'"
+
+$plinkArgsRestore = @(
+    "-ssh",
+    "-pw", $env:LINUX_SSH_PASSWORD,
+    "$env:LINUX_SSH_USER@$env:LINUX_SSH_HOST",
+    "sh -c $remoteCommandQuoted"
+)
+
+Write-Host "Executing remote command: sh -c $remoteCommandQuoted"
+
+& "$env:PLINK_PATH" @plinkArgsRestore
 
 Write-Host "Remote OVFTOOL import command:"
 Write-Host $ovfImportCommand
