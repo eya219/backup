@@ -1,9 +1,6 @@
-Write-Host "Detecting OVA provisioned disk size..."
+# Run ovftool remotely and capture ALL output (stderr included)
+$remoteCmd = "/usr/local/bin/ovftool/ovftool --acceptAllEulas --noSSLVerify --X:logLevel=verbose $env:REMOTE_OVA_PATH 2>&1"
 
-# Build the remote command separately
-$remoteCmd = "/usr/local/bin/ovftool/ovftool --acceptAllEulas --noSSLVerify --X:logLevel=verbose $env:REMOTE_OVA_PATH | grep -i capacity"
-
-# Pass it to plink wrapped in 'sh -c' so the remote shell interprets the pipe
 $plinkArgsSize = @(
     "-ssh",
     "-pw", $env:LINUX_SSH_PASSWORD,
@@ -11,10 +8,14 @@ $plinkArgsSize = @(
     "sh -c '$remoteCmd'"
 )
 
-# Run plink and capture output (stderr too, for debugging)
-$ovaCapacityOutput = (& "$env:PLINK_PATH" @plinkArgsSize 2>&1)
+$fullOutput = (& "$env:PLINK_PATH" @plinkArgsSize).Trim()
 
-Write-Host "ovftool raw output: $ovaCapacityOutput"
+Write-Host "Full ovftool output:"
+Write-Host $fullOutput
+
+# Now filter for "Capacity" locally in PowerShell
+$ovaCapacityOutput = $fullOutput | Select-String -Pattern "Capacity" -SimpleMatch
+
 
 if (-not $ovaCapacityOutput) {
     Write-Error "ERROR: No output from remote ovftool command."
