@@ -72,7 +72,7 @@ $DateSuffix = Get-Date -Format "yyyyMMdd"
 $VMNameWithDate = "$env:TARGET_VM_NAME-$DateSuffix"
 Write-Host "VM will be restored as: $VMNameWithDate"
 
-$ovfImportCommand = "/usr/local/bin/ovftool/ovftool --acceptAllEulas --noSSLVerify --overwrite --datastore=`"$selectedDatastore`" --name=$VMNameWithDate $env:REMOTE_OVA_PATH vi://$env:VCENTER_USER`:$env:VCENTER_PASS@$env:VCENTER_HOST/$env:TARGET_VM_FOLDER"
+$ovfImportCommand = "/usr/local/bin/ovftool/ovftool --acceptAllEulas --noSSLVerify --overwrite --datastore=`"$selectedDatastore`" --name=$VMNameWithDate -- $env:REMOTE_OVA_PATH vi://$env:VCENTER_USER`:$env:VCENTER_PASS@$env:VCENTER_HOST/$env:TARGET_VM_FOLDER"
 # Wrap the entire ovftool command in single quotes for remote shell
 # Escape any single quotes in the command (if any)
 $escapedCommand = $ovfImportCommand -replace "'", "'\\''"
