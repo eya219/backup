@@ -4,7 +4,7 @@ $plinkArgsSize = @(
     "-ssh",
     "-pw", $env:LINUX_SSH_PASSWORD,
     "$env:LINUX_SSH_USER@$env:LINUX_SSH_HOST",
-    "/usr/local/bin/ovftool/ovftool --acceptAllEulas --noSSLVerify --X:logLevel=verbose " + $env:REMOTE_OVA_PATH + " | grep -i capacity"
+    "sh -c \"/usr/local/bin/ovftool/ovftool --acceptAllEulas --noSSLVerify --X:logLevel=verbose $env:REMOTE_OVA_PATH | grep -i capacity\""
 )
 
 $ovaCapacityOutput = (& "$env:PLINK_PATH" @plinkArgsSize).Trim()
