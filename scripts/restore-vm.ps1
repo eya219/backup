@@ -22,6 +22,15 @@ if (-not $ovaCapacityOutput) {
     exit 1
 }
 
+# Extract just the matched lines as strings (there can be multiple matches)
+$ovaCapacityOutput = $ovaCapacityOutput | ForEach-Object { $_.Line }
+
+# If multiple lines, join into one string (optional, based on your needs)
+if ($ovaCapacityOutput -is [System.Array]) {
+    $ovaCapacityOutput = $ovaCapacityOutput -join "`n"
+}
+
+# Now you can safely trim
 $ovaCapacityOutput = $ovaCapacityOutput.Trim()
 
 if ($ovaCapacityOutput -match "Capacity:\s+([\d\.]+)\s+GB") {
