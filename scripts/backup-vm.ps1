@@ -9,7 +9,8 @@ param (
     [string]$PLINK_PATH,
     [string]$LINUX_SSH_USER,
     [string]$LINUX_SSH_PASSWORD,
-    [string]$LINUX_SSH_HOST
+    [string]$LINUX_SSH_HOST,
+    [string]$DATASTORE_NAME = "DatastoreTest2"  # optional parameter to avoid hardcoding
 )
 
 # Enforce TLS 1.2
@@ -21,36 +22,32 @@ Import-Module VMware.PowerCLI -Force
 # PowerCLI Configurations
 Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false | Out-Null
 Set-PowerCLIConfiguration -Scope User -ParticipateInCEIP $false -Confirm:$false
-
-# Increase the WebOperationTimeoutSeconds for longer operations (20 minutes here)
 Set-PowerCLIConfiguration -WebOperationTimeoutSeconds 1200 -Scope Session -Confirm:$false
 
-# Connect to vCenter using the parameter for hostname
+# Connect to vCenter
 $vcenter = Connect-VIServer -Server $VCENTER_HOST -User $VCENTER_USER -Password $VCENTER_PASS
 
 # Get the VM object
 $vm = Get-VM -Name $SOURCE_VM_NAME -ErrorAction Stop
 
-Write-Host "Creating snapshot..."
-$snapshot = New-Snapshot -VM $vm -Name "BackupSnapshot" -Description "Snapshot for manual backup" -Quiesce -Memory:$false
+Write-Host "Creating snapshot for $SOURCE_VM_NAME..."
+$snapshot = New-Snapshot -VM $vm -Name "BackupSnapshot" -Description "Snapshot for backup" -Quiesce -Memory:$false
 
 Write-Host "Cloning VM to $CLONE_VM_NAME..."
-$datastore = Get-Datastore -Name DatastoreTest2 -ErrorAction Stop
+$datastore = Get-Datastore -Name $DATASTORE_NAME -ErrorAction Stop
 $vmHost = $vm.VMHost
-New-VM -Name $CLONE_VM_NAME -VM $vm -Datastore $datastore -VMHost $vmHost -LinkedClone -ReferenceSnapshot $snapshot
+$cloneVM = New-VM -Name $CLONE_VM_NAME -VM $vm -Datastore $datastore -VMHost $vmHost -LinkedClone -ReferenceSnapshot $snapshot
 
-Write-Host "Removing snapshot from original VM..."
-# Uncomment the next line to remove snapshot immediately if needed
-# Get-Snapshot -VM $vm -Name "BackupSnapshot" | Remove-Snapshot -Confirm:$false
-
-# Construct the ovftool command to run remotely on Linux
-if (-not $VM_PATH.StartsWith("/")) {
-    $VM_PATH = "/" + $VM_PATH
+# Construct the ovftool command dynamically
+$vmPathNormalized = $VM_PATH
+if (-not $vmPathNormalized.StartsWith("/")) {
+    $vmPathNormalized = "/" + $vmPathNormalized
 }
-$ovfCommand = "/usr/local/bin/ovftool/ovftool --noSSLVerify vi://${VCENTER_USER}:${VCENTER_PASS}@${VCENTER_HOST}${VM_PATH} ${REMOTE_EXPORT_PATH}"
 
+$ovfCommand = "${OVFTOOL_PATH} --noSSLVerify vi://${VCENTER_USER}:${VCENTER_PASS}@${VCENTER_HOST}${vmPathNormalized} ${REMOTE_EXPORT_PATH}"
 Write-Host "Remote ovftool command: $ovfCommand"
 
+# Run the command via plink on remote Linux host
 $plinkArgs = @(
     "-ssh",
     "-pw", $LINUX_SSH_PASSWORD,
@@ -61,7 +58,7 @@ $plinkArgs = @(
 Write-Host "Starting remote export with plink..."
 & "$PLINK_PATH" @plinkArgs
 
-Write-Host "Deleting cloned VM..."
+Write-Host "Deleting cloned VM $CLONE_VM_NAME..."
 Get-VM -Name $CLONE_VM_NAME | Remove-VM -DeletePermanently -Confirm:$false
 
 Write-Host "Removing snapshot from original VM..."
