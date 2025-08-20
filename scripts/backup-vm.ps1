@@ -47,7 +47,7 @@ if (-not $vmPathNormalized.StartsWith("/")) {
 }
 
 # Construct the ovftool command with quotes to pass correctly over Plink
-$remoteCommand = "`"$OVFTOOL_PATH --noSSLVerify vi://$VCENTER_USER:$VCENTER_PASS@$VCENTER_HOST$vmPathNormalized $REMOTE_EXPORT_PATH`""
+$remoteCommand = "`"$OVFTOOL_PATH --noSSLVerify vi://${VCENTER_USER}:${VCENTER_PASS}@${VCENTER_HOST}${vmPathNormalized} ${REMOTE_EXPORT_PATH}`""
 
 Write-Host "Remote ovftool command: $remoteCommand"
 
@@ -58,6 +58,7 @@ $plinkArgs = @(
     "$LINUX_SSH_USER@$LINUX_SSH_HOST",
     $remoteCommand
 )
+
 
 Write-Host "Starting remote export with Plink..."
 & "$PLINK_PATH" @plinkArgs
